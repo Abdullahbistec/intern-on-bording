@@ -1,0 +1,48 @@
+alerts:
+  - name: search-slo-burn
+    severity: Sev2
+    condition: "GET /books bad rate > 1% over 5m"
+    notification: [Pager, Teams]
+    runbook: reliability/runbook.md#failure-3-sunday-tabloid-spike--10-sustained-traffic
+
+  - name: listing-endpoint-outage
+    severity: Sev1
+    condition: "POST /books synthetic test fails continuously for 3m"
+    notification: [Pager, SMS, Teams]
+    runbook: reliability/runbook.md#failure-1-azure-sql-primary-unavailable-for-5-minutes
+
+  - name: listing-success-rate-drop
+    severity: Sev2
+    condition: "POST /books success rate < 99% over 5m"
+    notification: [Pager, Teams]
+    runbook: reliability/runbook.md#failure-1-azure-sql-primary-unavailable-for-5-minutes
+
+  - name: redis-fallback-high
+    severity: Sev3
+    condition: "Redis dependency failure rate > 10% for 2m"
+    notification: [Teams]
+    runbook: reliability/runbook.md#failure-2-azure-cache-for-redis-is-down
+
+  - name: sql-dependency-failures
+    severity: Sev1
+    condition: "SQL dependency failure rate > 5% for 2m"
+    notification: [Pager, Teams]
+    runbook: reliability/runbook.md#failure-1-azure-sql-primary-unavailable-for-5-minutes
+
+  - name: auth-bypass-risk
+    severity: Sev1
+    condition: "Any non-/health unauthenticated request returns non-401/403"
+    notification: [Pager, SecurityTeams]
+    runbook: security/review.md
+
+  - name: servicebus-backlog
+    severity: Sev3
+    condition: "ActiveMessages > 10000 or OldestMessageAge > 10m"
+    notification: [Teams]
+    runbook: reliability/runbook.md#failure-3-sunday-tabloid-spike--10-sustained-traffic
+
+  - name: pii-leak-detected
+    severity: Sev1
+    condition: "PII pattern found in traces/customEvents"
+    notification: [Pager, SecurityTeams]
+    runbook: security/review.md
