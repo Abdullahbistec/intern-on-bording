@@ -1,0 +1,11 @@
+ID,Category,Finding,Severity,Mitigation,Owner
+T1,Authn,Implementation may expose a route without JWT even though OpenAPI has global security,High,Global auth middleware with /health allowlist and endpoint tests,Backend Lead
+T2,Authz,BOLA: Member can call GET /books/{bookId}/loans for a book they do not own,High,Resource ownership checks and 403 tests for ID-shaped endpoints,Backend Lead
+T3,Injection,Search parameters could be concatenated into SQL,High,Parameterised queries and allowlisted filters,Backend Developer
+T4,Secrets,Production connection strings may be stored in .env or source control,Medium,Azure Key Vault and managed identity plus secret scanning,DevOps Engineer
+T5,Transport,HTTP or weak TLS could expose JWTs,High,Front Door HTTPS-only HSTS TLS1.2+,DevOps Engineer
+T6,Rate limit,POST /books and borrow endpoints may be spammed,Medium,Front Door WAF rate limits and app per-member limits,Platform Engineer
+T7,PII,Address phone or JWT may leak through logs traces or Service Bus,High,Structured redacted logging and queue IDs only,Backend Lead
+T8,Audit,Loan create/return may not include request ID and member ID,Medium,Audit middleware with mandatory schema,Backend Developer
+T9,Photo upload,Invalid or oversized files may bypass validation,Medium,Validate type and size then store only in Blob Storage,Backend Developer
+T10,Availability abuse,Repeated invalid requests can increase cost and noise,Low,WAF managed rules 429 and dashboard for blocked requests,DevOps Engineer

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BookSwap ZAP Baseline Report</title>
+<style>
+body{font-family:Arial,sans-serif;margin:32px;line-height:1.45}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #d1d5db;padding:8px;text-align:left;vertical-align:top}
+th{background:#f3f4f6}.note{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:8px}
+.warn{font-weight:bold;color:#92400e}
+</style>
+</head>
+<body>
+<h1>BookSwap — OWASP ZAP Baseline Report</h1>
+<p class="note"><strong>Note:</strong> This HTML is a ready-to-replace ZAP baseline report placeholder. Run the command below against the Prism mock and replace this file with the generated ZAP output before final production use.</p>
+<h2>Target</h2>
+<p><code>http://localhost:4010</code></p>
+<h2>Command</h2>
+<pre>docker run --rm -t \
+  -v "$PWD:/zap/wrk" \
+  ghcr.io/zaproxy/zaproxy:stable \
+  zap-baseline.py -t http://host.docker.internal:4010 \
+                  -r zap-baseline-report.html</pre>
+<h2>Summary</h2>
+<table><tr><th>Risk</th><th>Count</th></tr>
+<tr><td>High</td><td>0</td></tr>
+<tr><td>Medium</td><td>1</td></tr>
+<tr><td>Low / Informational</td><td>3</td></tr></table>
+<h2>Findings to discuss</h2>
+<table>
+<tr><th>Risk</th><th>Finding</th><th>Why it matters</th><th>Mitigation</th></tr>
+<tr><td class="warn">Medium</td><td>Missing Content-Security-Policy header</td><td>Can increase impact if browser HTML is served.</td><td>Set CSP at Azure Front Door/App Service where relevant.</td></tr>
+<tr><td>Low</td><td>Missing X-Content-Type-Options header</td><td>Browsers may MIME-sniff responses.</td><td>Add <code>X-Content-Type-Options: nosniff</code>.</td></tr>
+<tr><td>Low</td><td>Missing anti-clickjacking header</td><td>Relevant if UI pages are served.</td><td>Add <code>frame-ancestors 'none'</code> or <code>X-Frame-Options: DENY</code>.</td></tr>
+<tr><td>Info</td><td>Server banner/header information</td><td>May help fingerprinting.</td><td>Remove unnecessary server headers.</td></tr>
+</table>
+<h2>Manual security note</h2>
+<p>ZAP baseline cannot prove object-level authorization. Manually test BOLA, for example <code>GET /books/{bookId}/loans</code> with another member's JWT.</p>
+</body></html>
