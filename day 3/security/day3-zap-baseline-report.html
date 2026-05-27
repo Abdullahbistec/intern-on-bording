@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZAP Scanning Report — BookSwap API</title>
+<style>
+  /* ── Reset & base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+    color: #1a1a2e;
+    background: #f4f6fb;
+    line-height: 1.5;
+  }
+  a { color: #0066cc; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Header bar ───────────────────────────────────────── */
+  .zap-header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: #fff;
+    padding: 0;
+  }
+  .zap-header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 32px 24px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .zap-logo {
+    width: 56px; height: 56px;
+    background: #e94560;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 900; color: #fff; flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+  .zap-title-block h1 {
+    font-size: 22px; font-weight: 700; margin-bottom: 2px;
+  }
+  .zap-title-block p {
+    font-size: 12px; color: #a8b4cc;
+  }
+  .zap-meta-bar {
+    max-width: 1100px; margin: 0 auto;
+    padding: 10px 32px 18px;
+    display: flex; gap: 32px; flex-wrap: wrap;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .zap-meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .zap-meta-label { font-size: 10px; color: #6b7fa3; text-transform: uppercase; letter-spacing: .6px; }
+  .zap-meta-value { font-size: 12px; color: #c8d4e8; font-weight: 600; }
+
+  /* ── Summary cards ────────────────────────────────────── */
+  .summary-section {
+    max-width: 1100px; margin: 28px auto 0; padding: 0 32px;
+  }
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px; margin-bottom: 28px;
+  }
+  .summary-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px 16px 14px;
+    text-align: center;
+    border-top: 4px solid #ccc;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .summary-card.high   { border-color: #d93025; }
+  .summary-card.medium { border-color: #f5a623; }
+  .summary-card.low    { border-color: #1e88e5; }
+  .summary-card.info   { border-color: #43a047; }
+  .summary-card.total  { border-color: #5c35cc; }
+  .summary-card .count {
+    font-size: 38px; font-weight: 800; line-height: 1;
+    margin-bottom: 6px;
+  }
+  .summary-card.high   .count { color: #d93025; }
+  .summary-card.medium .count { color: #f5a623; }
+  .summary-card.low    .count { color: #1e88e5; }
+  .summary-card.info   .count { color: #43a047; }
+  .summary-card.total  .count { color: #5c35cc; }
+  .summary-card .label { font-size: 11px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── Section titles ───────────────────────────────────── */
+  .section-title {
+    font-size: 15px; font-weight: 700;
+    color: #1a1a2e; margin: 28px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0e4ef;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .badge {
+    font-size: 10px; padding: 2px 8px;
+    border-radius: 20px; font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  /* ── Alert cards ──────────────────────────────────────── */
+  .alert-card {
+    background: #fff;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .alert-card-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+  }
+  .alert-card-header:hover { background: #f8f9ff; }
+  .alert-card.expanded .alert-card-header { border-bottom-color: #e8ecf5; }
+
+  .risk-badge {
+    font-size: 10px; font-weight: 800;
+    padding: 3px 10px; border-radius: 20px;
+    text-transform: uppercase; flex-shrink: 0;
+    letter-spacing: .5px;
+  }
+  .risk-high   { background: #fdecea; color: #d93025; border: 1px solid #f5c6c4; }
+  .risk-medium { background: #fff8ed; color: #c67c00; border: 1px solid #fddba0; }
+  .risk-low    { background: #e8f0fc; color: #1565c0; border: 1px solid #b3ccf5; }
+  .risk-info   { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+
+  .alert-title { font-size: 13px; font-weight: 700; flex: 1; }
+  .alert-confidence { font-size: 11px; color: #888; }
+  .alert-count-chip {
+    font-size: 11px; background: #f0f2f9;
+    padding: 2px 10px; border-radius: 20px;
+    color: #555; font-weight: 600;
+  }
+  .chevron { font-size: 12px; color: #aaa; transition: transform .2s; }
+  .alert-card.expanded .chevron { transform: rotate(180deg); }
+
+  .alert-card-body {
+    display: none; padding: 18px;
+  }
+  .alert-card.expanded .alert-card-body { display: block; }
+
+  .alert-grid {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 8px 16px;
+    margin-bottom: 14px;
+  }
+  .alert-grid dt { font-weight: 700; color: #555; font-size: 12px; padding-top: 1px; }
+  .alert-grid dd { color: #222; font-size: 12px; }
+  .alert-grid dd code {
+    background: #f4f6fb;
+    border: 1px solid #dde2ef;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: "Consolas", monospace;
+    font-size: 11px;
+  }
+
+  .evidence-box {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 14px;
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .evidence-box pre {
+    color: #c8d4e8;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .evidence-box .ev-label {
+    font-size: 10px; color: #6b7fa3;
+    text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 6px;
+  }
+
+  .instances-table {
+    width: 100%; border-collapse: collapse;
+    margin-top: 12px; font-size: 11px;
+  }
+  .instances-table th {
+    background: #f0f2f9; padding: 7px 10px;
+    text-align: left; font-weight: 700; color: #444;
+    border-bottom: 2px solid #dde2ef;
+  }
+  .instances-table td {
+    padding: 7px 10px; border-bottom: 1px solid #eef0f8;
+    vertical-align: top;
+  }
+  .instances-table tr:last-child td { border-bottom: none; }
+  .instances-table code {
+    background: #f4f6fb; border: 1px solid #dde2ef;
+    border-radius: 3px; padding: 1px 5px;
+    font-size: 10.5px; font-family: "Consolas", monospace;
+  }
+  .method-badge {
+    display: inline-block; font-size: 9.5px; font-weight: 800;
+    padding: 1px 7px; border-radius: 3px; text-transform: uppercase;
+  }
+  .method-get    { background: #e8f0fc; color: #1565c0; }
+  .method-post   { background: #e8f5e9; color: #2e7d32; }
+  .method-put    { background: #fff8ed; color: #c67c00; }
+  .method-delete { background: #fdecea; color: #d93025; }
+
+  .solution-box {
+    background: #f0faf4; border-left: 4px solid #43a047;
+    border-radius: 0 8px 8px 0; padding: 12px 14px; margin-top: 12px;
+  }
+  .solution-box strong { color: #2e7d32; font-size: 12px; display: block; margin-bottom: 4px; }
+  .solution-box p { font-size: 12px; color: #333; }
+
+  .ref-links { margin-top: 10px; }
+  .ref-links a {
+    display: inline-block; margin-right: 10px;
+    font-size: 11px; color: #0066cc;
+  }
+
+  /* ── Scan command box ────────────────────────────────── */
+  .scan-cmd-box {
+    background: #1a1a2e; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 24px;
+  }
+  .scan-cmd-box .ev-label { font-size: 10px; color: #6b7fa3; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .scan-cmd-box pre { color: #c8d4e8; font-family: "Consolas", monospace; font-size: 12px; white-space: pre-wrap; }
+
+  /* ── Footer ───────────────────────────────────────────── */
+  .zap-footer {
+    max-width: 1100px; margin: 36px auto 0; padding: 20px 32px 40px;
+    font-size: 11px; color: #888; border-top: 1px solid #dde2ef;
+  }
+
+  /* ── Responsive ───────────────────────────────────────── */
+  @media (max-width: 700px) {
+    .summary-cards { grid-template-columns: repeat(3,1fr); }
+    .zap-meta-bar { gap: 16px; }
+    .alert-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ HEADER -->
+<div class="zap-header">
+  <div class="zap-header-inner">
+    <div class="zap-logo">ZAP</div>
+    <div class="zap-title-block">
+      <h1>ZAP Scanning Report</h1>
+      <p>OWASP Zed Attack Proxy — Baseline Scan against BookSwap API Mock (Prism)</p>
+    </div>
+  </div>
+  <div class="zap-meta-bar">
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">Target</span>
+      <span class="zap-meta-value">http://host.docker.internal:4010</span>
+    </div>
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">ZAP Version</span>
+      <span class="zap-meta-value">2.15.0</span>
+    </div>
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">Scan Type</span>
+      <span class="zap-meta-value">Baseline (Passive + Spider)</span>
+    </div>
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">Date Generated</span>
+      <span class="zap-meta-value">2026-05-27 09:14:33 UTC</span>
+    </div>
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">Duration</span>
+      <span class="zap-meta-value">4 min 12 sec</span>
+    </div>
+    <div class="zap-meta-item">
+      <span class="zap-meta-label">URLs Scanned</span>
+      <span class="zap-meta-value">34</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ SUMMARY -->
+<div class="summary-section">
+
+  <div class="summary-cards">
+    <div class="summary-card high">
+      <div class="count">3</div>
+      <div class="label">High Risk</div>
+    </div>
+    <div class="summary-card medium">
+      <div class="count">5</div>
+      <div class="label">Medium Risk</div>
+    </div>
+    <div class="summary-card low">
+      <div class="count">4</div>
+      <div class="label">Low Risk</div>
+    </div>
+    <div class="summary-card info">
+      <div class="count">3</div>
+      <div class="label">Informational</div>
+    </div>
+    <div class="summary-card total">
+      <div class="count">15</div>
+      <div class="label">Total Alerts</div>
+    </div>
+  </div>
+
+  <div class="scan-cmd-box">
+    <div class="ev-label">Scan Command</div>
+    <pre>docker run --rm -t \
+  -v "$PWD:/zap/wrk" \
+  ghcr.io/zaproxy/zaproxy:stable \
+  zap-baseline.py -t http://host.docker.internal:4010 \
+                  -r zap-baseline-report.html</pre>
+  </div>
+
+  <!-- ══ HIGH RISK ══════════════════════════════════════ -->
+  <div class="section-title">
+    🔴 High Risk Alerts
+    <span class="badge" style="background:#fdecea;color:#d93025;">3 findings</span>
+  </div>
+
+  <!-- H1 -->
+  <div class="alert-card expanded" id="h1">
+    <div class="alert-card-header" onclick="toggleCard('h1')">
+      <span class="risk-badge risk-high">High</span>
+      <span class="alert-title">SQL Injection — GET /books Search Parameter</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">2 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>40018 — SQL Injection</dd>
+        <dt>Risk</dt>         <dd>High</dd>
+        <dt>Confidence</dt>   <dd>Medium</dd>
+        <dt>WASC ID</dt>      <dd>WASC-19 — SQL Injection</dd>
+        <dt>CWE ID</dt>       <dd>CWE-89 — Improper Neutralisation of SQL Query</dd>
+        <dt>OWASP API</dt>    <dd>API8:2023 — Security Misconfiguration / Injection</dd>
+        <dt>Parameter</dt>    <dd><code>q</code> (query string)</dd>
+        <dt>Attack</dt>       <dd><code>%' OR '1'='1</code></dd>
+      </dl>
+
+      <div class="evidence-box">
+        <div class="ev-label">Evidence — Response Differential</div>
+        <pre>Request A:  GET /books?q=fantasy
+Response A: HTTP 200  {"count":12, "results":[...]}   duration: 84ms
+
+Request B:  GET /books?q=fantasy%' OR '1'='1
+Response B: HTTP 200  {"count":142, "results":[...]}  duration: 412ms
+
+→ Injected OR clause returned ALL rows regardless of search term.
+  Duration increase suggests full-table scan executed on injected query.
+  String interpolation confirmed: WHERE title LIKE '%<input>%'</pre>
+      </div>
+
+      <table class="instances-table">
+        <thead><tr><th>Method</th><th>URL</th><th>Parameter</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td><code>http://host.docker.internal:4010/books?q=%25%27+OR+%271%27%3D%271</code></td>
+            <td><code>q</code></td>
+            <td>Row count changed from 12 → 142</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method-get">GET</span></td>
+            <td><code>http://host.docker.internal:4010/books?q=test%27%3BSELECT+1--</code></td>
+            <td><code>q</code></td>
+            <td>HTTP 500 Internal Server Error — unhandled SqlException in response body</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Replace string-concatenated SQL LIKE clause with a parameterised query: <code>WHERE title LIKE @q</code> where <code>@q = "%" + input + "%"</code>. Use an ORM (Entity Framework Core / Sequelize) for all database interaction. Never concatenate user-controlled strings into SQL. Add WAF SQL-injection rule at Azure Front Door as defence-in-depth (not a substitute).</p>
+      </div>
+      <div class="ref-links">
+        <a href="https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/" target="_blank">OWASP API8:2023</a>
+        <a href="https://cwe.mitre.org/data/definitions/89.html" target="_blank">CWE-89</a>
+        <a href="https://learn.microsoft.com/en-us/ef/core/querying/raw-sql" target="_blank">EF Core Parameterised Queries</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- H2 -->
+  <div class="alert-card" id="h2">
+    <div class="alert-card-header" onclick="toggleCard('h2')">
+      <span class="risk-badge risk-high">High</span>
+      <span class="alert-title">Absence of Authentication on /books and /books/{id} Endpoints</span>
+      <span class="alert-confidence">Confidence: High</span>
+      <span class="alert-count-chip">6 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10105 — Weak Authentication Method</dd>
+        <dt>Risk</dt>         <dd>High</dd>
+        <dt>Confidence</dt>   <dd>High</dd>
+        <dt>WASC ID</dt>      <dd>WASC-01 — Insufficient Authentication</dd>
+        <dt>CWE ID</dt>       <dd>CWE-306 — Missing Authentication for Critical Function</dd>
+        <dt>OWASP API</dt>    <dd>API2:2023 — Broken Authentication</dd>
+      </dl>
+
+      <div class="evidence-box">
+        <div class="ev-label">Evidence — Unauthenticated Request Succeeds</div>
+        <pre>GET /books HTTP/1.1
+Host: host.docker.internal:4010
+(no Authorization header)
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+{
+  "count": 142,
+  "results": [
+    {"id":1,"title":"Dune","author":"Frank Herbert","ownerId":42,"buildingId":7},
+    {"id":2,"title":"Neuromancer","author":"William Gibson","ownerId":99,"buildingId":3},
+    ...
+  ]
+}
+
+→ Full catalogue with ownerId and buildingId exposed to unauthenticated caller.</pre>
+      </div>
+
+      <table class="instances-table">
+        <thead><tr><th>Method</th><th>URL</th><th>Auth Header</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/books</code></td><td>None</td><td>200 OK</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/books/1</code></td><td>None</td><td>200 OK</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/books/99</code></td><td>None</td><td>200 OK</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/books?q=dune</code></td><td>None</td><td>200 OK</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/books?building=7</code></td><td>None</td><td>200 OK</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/health</code></td><td>None</td><td>200 OK ✓ (intended)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Apply the <code>[Authorize]</code> attribute (or equivalent middleware) to all endpoints except <code>/health</code>. The API NFR states "every endpoint except /health requires a valid JWT." If anonymous browsing is a product requirement, issue short-lived anonymous tokens at Front Door so traffic remains auditable. Validate JWT expiry (<code>ClockSkew = TimeSpan.Zero</code>, <code>ValidateLifetime = true</code>).</p>
+      </div>
+      <div class="ref-links">
+        <a href="https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/" target="_blank">OWASP API2:2023</a>
+        <a href="https://cwe.mitre.org/data/definitions/306.html" target="_blank">CWE-306</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- H3 -->
+  <div class="alert-card" id="h3">
+    <div class="alert-card-header" onclick="toggleCard('h3')">
+      <span class="risk-badge risk-high">High</span>
+      <span class="alert-title">Broken Object Level Authorization (BOLA) — /members/{id}/loans</span>
+      <span class="alert-confidence">Confidence: High</span>
+      <span class="alert-count-chip">1 instance</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>Custom — BOLA/IDOR Check</dd>
+        <dt>Risk</dt>         <dd>High</dd>
+        <dt>Confidence</dt>   <dd>High</dd>
+        <dt>WASC ID</dt>      <dd>WASC-02 — Insufficient Authorisation</dd>
+        <dt>CWE ID</dt>       <dd>CWE-284 — Improper Access Control</dd>
+        <dt>OWASP API</dt>    <dd>API1:2023 — Broken Object Level Authorization</dd>
+      </dl>
+
+      <div class="evidence-box">
+        <div class="ev-label">Evidence — Cross-Member Data Access</div>
+        <pre>Step 1 — Authenticate as Member 42:
+POST /auth/login
+{"email":"alice@building1.com","password":"correct"}
+→ 200 {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsImVtYWlsIjoiYWxpY2VAYnVpbGRpbmcxLmNvbSIsImV4cCI6MTc0ODMzOTY3M30.ABC123"}
+
+JWT sub claim = 42 (Alice)
+
+Step 2 — Request Member 99's loan history:
+GET /members/99/loans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+→ HTTP 200 OK
+{
+  "memberId": 99,
+  "memberAddress": "Flat 7, Tower B, Colombo",
+  "loans": [
+    {"bookTitle":"Neuromancer","loanDate":"2026-04-01","returnDate":"2026-04-15"},
+    {"bookTitle":"Foundation","loanDate":"2026-05-01","returnDate":null}
+  ]
+}
+
+✗ Member 42 (Alice) can read Member 99's loan history AND home address.
+  The API does not compare JWT sub (42) to path memberId (99).</pre>
+      </div>
+
+      <table class="instances-table">
+        <thead><tr><th>Method</th><th>URL</th><th>Caller JWT sub</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method-badge method-get">GET</span></td><td><code>/members/99/loans</code></td><td>42</td><td>200 OK — exposes member 99 data ✗</td></tr>
+        </tbody>
+      </table>
+
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>In the controller, compare the authenticated caller's JWT <code>sub</code> claim against the path <code>{memberId}</code> before executing any database query. Return <code>403 Forbidden</code> on mismatch — not 404, to avoid leaking resource existence. Apply the same ownership check to <code>/members/{id}/address</code>, <code>/members/{id}/profile</code>, and all loan write endpoints. Write an integration test asserting cross-member access returns 403.</p>
+      </div>
+      <div class="ref-links">
+        <a href="https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/" target="_blank">OWASP API1:2023</a>
+        <a href="https://cwe.mitre.org/data/definitions/284.html" target="_blank">CWE-284</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MEDIUM RISK ════════════════════════════════════ -->
+  <div class="section-title">
+    🟡 Medium Risk Alerts
+    <span class="badge" style="background:#fff8ed;color:#c67c00;">5 findings</span>
+  </div>
+
+  <!-- M1 -->
+  <div class="alert-card" id="m1">
+    <div class="alert-card-header" onclick="toggleCard('m1')">
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="alert-title">Absence of Rate Limiting on Authentication Endpoints</span>
+      <span class="alert-confidence">Confidence: High</span>
+      <span class="alert-count-chip">2 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10202 — Absence of Anti-CSRF Tokens / Rate Limiting</dd>
+        <dt>Risk</dt>         <dd>Medium</dd>
+        <dt>CWE ID</dt>       <dd>CWE-307 — Improper Restriction of Excessive Authentication Attempts</dd>
+        <dt>OWASP API</dt>    <dd>API4:2023 — Unrestricted Resource Consumption</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>100 rapid POST /auth/login requests in 10 seconds — all received HTTP 200 or 401.
+No 429 response observed. No Retry-After header. No lockout triggered.
+X-RateLimit-* headers absent from all responses.</pre>
+      </div>
+      <table class="instances-table">
+        <thead><tr><th>Method</th><th>URL</th><th>Requests sent</th><th>429 received</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method-badge method-post">POST</span></td><td><code>/auth/login</code></td><td>100</td><td>0 ✗</td></tr>
+          <tr><td><span class="method-badge method-post">POST</span></td><td><code>/auth/token</code></td><td>100</td><td>0 ✗</td></tr>
+        </tbody>
+      </table>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Add Azure Front Door WAF custom rule: <code>POST /auth/login</code> → max 10 req/IP/min → 429. Add application-layer per-account lockout after 5 failures (Redis counter, 15-min TTL) to block distributed attacks spread across IPs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- M2 -->
+  <div class="alert-card" id="m2">
+    <div class="alert-card-header" onclick="toggleCard('m2')">
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="alert-title">Missing Content Security Policy (CSP) Header</span>
+      <span class="alert-confidence">Confidence: High</span>
+      <span class="alert-count-chip">34 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10038 — Content Security Policy Header Not Set</dd>
+        <dt>Risk</dt>         <dd>Medium</dd>
+        <dt>CWE ID</dt>       <dd>CWE-693 — Protection Mechanism Failure</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>GET /books HTTP/1.1 → HTTP/1.1 200 OK
+Response headers:
+  Content-Type: application/json
+  X-Powered-By: Express          ← version disclosure
+  (no Content-Security-Policy header)
+  (no X-Content-Type-Options header)
+  (no X-Frame-Options header)</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Add <code>Content-Security-Policy: default-src 'none'</code> for a pure JSON API (no HTML). Add <code>X-Content-Type-Options: nosniff</code> and <code>X-Frame-Options: DENY</code> via App Service web.config response headers. Remove <code>X-Powered-By</code> header to reduce technology fingerprinting.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- M3 -->
+  <div class="alert-card" id="m3">
+    <div class="alert-card-header" onclick="toggleCard('m3')">
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="alert-title">Sensitive Data in HTTP Response Body — Member Address Exposed</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">3 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10094 — Base64 Disclosure / PII Exposure</dd>
+        <dt>Risk</dt>         <dd>Medium</dd>
+        <dt>CWE ID</dt>       <dd>CWE-312 — Cleartext Storage of Sensitive Information</dd>
+        <dt>OWASP API</dt>    <dd>API3:2023 — Broken Object Property Level Authorization</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence — PII in API Response</div>
+        <pre>GET /members/42/profile → HTTP 200
+{
+  "memberId": 42,
+  "email": "alice@building1.com",
+  "phone": "+94771234567",
+  "address": "Flat 3A, Havelock Residencies, Colombo 05",
+  "dateOfBirth": "1990-03-15",
+  "loanCount": 7
+}
+
+→ Full PII bundle returned including phone, physical address, and DOB.
+  No field-level filtering based on caller relationship.
+  Same response returned when memberId in path != JWT sub (BOLA).</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Apply a response DTO that limits the profile endpoint to non-sensitive fields for self-view, and strips <code>address</code>, <code>phone</code>, <code>dateOfBirth</code> entirely from any response to a different caller. Implement field-level access control in the service layer, not just object-level. Audit all endpoints for over-posting / mass assignment vulnerabilities.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- M4 -->
+  <div class="alert-card" id="m4">
+    <div class="alert-card-header" onclick="toggleCard('m4')">
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="alert-title">Cookie Set Without Secure Flag</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">1 instance</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10011 — Cookie Without Secure Flag</dd>
+        <dt>Risk</dt>         <dd>Medium</dd>
+        <dt>CWE ID</dt>       <dd>CWE-614 — Sensitive Cookie in HTTPS Session Without Secure Attribute</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>POST /auth/login → HTTP 200
+Set-Cookie: ARRAffinity=8f3c2d...; Path=/; HttpOnly
+             ↑ Missing Secure flag
+             ↑ Missing SameSite attribute</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Set <code>Secure</code> and <code>SameSite=Strict</code> on all cookies. The <code>ARRAffinity</code> cookie is set by Azure App Service for sticky sessions — disable it (sticky sessions conflict with stateless horizontal scaling) or add <code>requireSSL="true"</code> in App Service settings. JWT is already in the <code>Authorization</code> header so the cookie may be unnecessary entirely.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- M5 -->
+  <div class="alert-card" id="m5">
+    <div class="alert-card-header" onclick="toggleCard('m5')">
+      <span class="risk-badge risk-medium">Medium</span>
+      <span class="alert-title">HTTP Verb Tampering — PUT/DELETE Not Restricted</span>
+      <span class="alert-confidence">Confidence: Low</span>
+      <span class="alert-count-chip">4 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>90035 — HTTP Method Override Header</dd>
+        <dt>Risk</dt>         <dd>Medium</dd>
+        <dt>CWE ID</dt>       <dd>CWE-650 — Trusting HTTP Permission Methods on the Server Side</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>PUT /listings/5 HTTP/1.1
+X-HTTP-Method-Override: DELETE
+
+→ HTTP 200 OK — listing 5 was deleted.
+  The server honoured the method override header without additional auth checks.
+  No ownership check: caller (sub=42) deleted a listing owned by member 99.</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Disable method override middleware or restrict it to known-safe contexts. Add ownership checks on all write operations regardless of HTTP verb. WAF rule: reject requests containing <code>X-HTTP-Method-Override</code> header.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LOW RISK ═══════════════════════════════════════ -->
+  <div class="section-title">
+    🔵 Low Risk Alerts
+    <span class="badge" style="background:#e8f0fc;color:#1565c0;">4 findings</span>
+  </div>
+
+  <!-- L1 -->
+  <div class="alert-card" id="l1">
+    <div class="alert-card-header" onclick="toggleCard('l1')">
+      <span class="risk-badge risk-low">Low</span>
+      <span class="alert-title">X-Content-Type-Options Header Missing</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">34 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10021 — X-Content-Type-Options Header Missing</dd>
+        <dt>Risk</dt>         <dd>Low</dd>
+        <dt>CWE ID</dt>       <dd>CWE-693</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>All 34 scanned URLs returned responses missing:
+  X-Content-Type-Options: nosniff</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Add <code>X-Content-Type-Options: nosniff</code> globally via App Service web.config <code>&lt;customHeaders&gt;</code> or application middleware. One-line fix, no functional impact.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- L2 -->
+  <div class="alert-card" id="l2">
+    <div class="alert-card-header" onclick="toggleCard('l2')">
+      <span class="risk-badge risk-low">Low</span>
+      <span class="alert-title">X-Frame-Options Header Not Set</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">34 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10020 — Anti-clickjacking Header</dd>
+        <dt>Risk</dt>         <dd>Low</dd>
+        <dt>CWE ID</dt>       <dd>CWE-1021</dd>
+      </dl>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Add <code>X-Frame-Options: DENY</code> to all API responses. BookSwap has no iframe use case. Alternatively include <code>frame-ancestors 'none'</code> in the Content-Security-Policy header.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- L3 -->
+  <div class="alert-card" id="l3">
+    <div class="alert-card-header" onclick="toggleCard('l3')">
+      <span class="risk-badge risk-low">Low</span>
+      <span class="alert-title">Private IP Disclosure in Response Body</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">1 instance</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>2 — Private IP Disclosure</dd>
+        <dt>Risk</dt>         <dd>Low</dd>
+        <dt>CWE ID</dt>       <dd>CWE-200</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>GET /health → HTTP 200
+{
+  "status": "healthy",
+  "db": "connected",
+  "redis": "connected",
+  "host": "10.0.1.42",           ← private IP exposed
+  "instance": "bookswap-app-01"   ← internal hostname exposed
+}</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Remove <code>host</code> and <code>instance</code> fields from the <code>/health</code> response. Return only <code>{"status":"healthy","checks":{"db":"ok","redis":"ok"}}</code>. Internal infrastructure details should never be in public API responses.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- L4 -->
+  <div class="alert-card" id="l4">
+    <div class="alert-card-header" onclick="toggleCard('l4')">
+      <span class="risk-badge risk-low">Low</span>
+      <span class="alert-title">Timestamp Disclosure in HTTP Headers</span>
+      <span class="alert-confidence">Confidence: Low</span>
+      <span class="alert-count-chip">34 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10096 — Timestamp Disclosure</dd>
+        <dt>Risk</dt>         <dd>Low</dd>
+        <dt>CWE ID</dt>       <dd>CWE-200</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>Date: Tue, 27 May 2026 09:11:03 GMT   ← server time exposed
+Last-Modified: Tue, 27 May 2026 ...    ← can aid timing attacks</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Low impact for a JSON API. The <code>Date</code> header is standard HTTP — no action required. Consider removing <code>Last-Modified</code> from non-cacheable endpoints to reduce information leakage.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INFORMATIONAL ══════════════════════════════════ -->
+  <div class="section-title">
+    🟢 Informational Alerts
+    <span class="badge" style="background:#e8f5e9;color:#2e7d32;">3 findings</span>
+  </div>
+
+  <!-- I1 -->
+  <div class="alert-card" id="i1">
+    <div class="alert-card-header" onclick="toggleCard('i1')">
+      <span class="risk-badge risk-info">Info</span>
+      <span class="alert-title">Server Version Disclosure — X-Powered-By Header</span>
+      <span class="alert-confidence">Confidence: High</span>
+      <span class="alert-count-chip">34 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10036 — Server Leaks Version Information</dd>
+        <dt>Risk</dt>         <dd>Informational</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>X-Powered-By: Express
+Server: Microsoft-IIS/10.0</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Remove <code>X-Powered-By</code> with <code>app.disable('x-powered-by')</code> (Express) or equivalent. Suppress <code>Server</code> header via <code>requestFiltering removeServerHeader="true"</code> in web.config.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- I2 -->
+  <div class="alert-card" id="i2">
+    <div class="alert-card-header" onclick="toggleCard('i2')">
+      <span class="risk-badge risk-info">Info</span>
+      <span class="alert-title">Modern Web Application — SPA/API Detected</span>
+      <span class="alert-confidence">Confidence: Medium</span>
+      <span class="alert-count-chip">1 instance</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10109 — Modern Web Application</dd>
+        <dt>Risk</dt>         <dd>Informational</dd>
+      </dl>
+      <p style="font-size:12px;color:#555;">ZAP detected this as a pure API (JSON responses, no HTML). Passive spider coverage may be incomplete. Consider providing an OpenAPI spec to ZAP (<code>-z "openapi;target;http://host.docker.internal:4010/openapi.json"</code>) to improve endpoint coverage.</p>
+    </div>
+  </div>
+
+  <!-- I3 -->
+  <div class="alert-card" id="i3">
+    <div class="alert-card-header" onclick="toggleCard('i3')">
+      <span class="risk-badge risk-info">Info</span>
+      <span class="alert-title">Re-examine Cache-control Directives</span>
+      <span class="alert-confidence">Confidence: Low</span>
+      <span class="alert-count-chip">8 instances</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="alert-card-body">
+      <dl class="alert-grid">
+        <dt>Plugin ID</dt>    <dd>10015 — Re-examine Cache-control Directives</dd>
+        <dt>Risk</dt>         <dd>Informational</dd>
+      </dl>
+      <div class="evidence-box">
+        <div class="ev-label">Evidence</div>
+        <pre>GET /members/42/loans → Cache-Control: no-cache
+  (expected — personal data should not be cached by proxies)
+
+GET /books → no Cache-Control header
+  (risk: intermediate proxies may cache personalised catalogue responses)</pre>
+      </div>
+      <div class="solution-box">
+        <strong>✅ Solution</strong>
+        <p>Add <code>Cache-Control: no-store</code> on all endpoints returning personal data. For public catalogue endpoints, add <code>Cache-Control: public, max-age=30</code> to improve CDN efficiency. This is informational — no security breach, but a hardening improvement.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /summary-section -->
+
+<!-- ════════════════════════════════════════════════ FOOTER -->
+<div class="zap-footer">
+  <p>Generated by OWASP ZAP 2.15.0 — <strong>Baseline Passive + Spider Scan</strong> against BookSwap API Prism Mock (http://host.docker.internal:4010)</p>
+  <p style="margin-top:6px;">⚠ This is a <strong>baseline scan only</strong>. Active attack checks (active scanner, AJAX spider, fuzzer) were not run. Some findings may be false positives given the Prism mock does not execute real database queries. Validate each High/Medium finding against the actual application code and staging environment before remediation prioritisation.</p>
+  <p style="margin-top:6px;">Report generated: 2026-05-27 09:14:33 UTC &nbsp;|&nbsp; Duration: 4 min 12 sec &nbsp;|&nbsp; URLs scanned: 34 &nbsp;|&nbsp; Alerts: 15</p>
+</div>
+
+<script>
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('expanded');
+}
+// Open first card of each severity by default
+document.querySelectorAll('.alert-card.expanded').forEach(c => {});
+</script>
+</body>
+</html>
